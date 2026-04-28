@@ -8,6 +8,10 @@ export default [
     meanRadius: 2439.7,
     equaRadius: 2440,
     polarRadius: 2439,
+    mass: { massValue: 3.3011, massExponent: 23 },
+    vol: { volValue: 6.083, volExponent: 10 },
+    discoveredBy: 'Known to ancient civilizations',
+    discoveryDate: 'Antiquity',
     moons: [],
     bodyType: 'Planet'
   },
@@ -19,6 +23,10 @@ export default [
     meanRadius: 6051.8,
     equaRadius: 6052,
     polarRadius: 6051,
+    mass: { massValue: 4.8675, massExponent: 24 },
+    vol: { volValue: 9.2843, volExponent: 11 },
+    discoveredBy: 'Known to ancient civilizations',
+    discoveryDate: 'Antiquity',
     moons: [],
     bodyType: 'Planet'
   },
@@ -30,6 +38,10 @@ export default [
     meanRadius: 6371.0,
     equaRadius: 6378.1,
     polarRadius: 6356.8,
+    mass: { massValue: 5.97237, massExponent: 24 },
+    vol: { volValue: 1.08321, volExponent: 12 },
+    discoveredBy: null,
+    discoveryDate: null,
     moons: [{moon: 'Moon'}],
     bodyType: 'Planet'
   },
@@ -41,6 +53,10 @@ export default [
     meanRadius: 3389.5,
     equaRadius: 3396.2,
     polarRadius: 3376.2,
+    mass: { massValue: 6.4171, massExponent: 23 },
+    vol: { volValue: 1.6318, volExponent: 11 },
+    discoveredBy: 'Known to ancient civilizations',
+    discoveryDate: 'Antiquity',
     moons: [{moon: 'Phobos'},{moon:'Deimos'}],
     bodyType: 'Planet'
   },
@@ -52,6 +68,10 @@ export default [
     meanRadius: 69911,
     equaRadius: 71492,
     polarRadius: 66854,
+    mass: { massValue: 1.8982, massExponent: 27 },
+    vol: { volValue: 1.43128, volExponent: 15 },
+    discoveredBy: 'Known to ancient civilizations',
+    discoveryDate: 'Antiquity',
     moons: [{moon:'Io'},{moon:'Europa'},{moon:'Ganymede'},{moon:'Callisto'}],
     bodyType: 'Planet'
   },
@@ -63,6 +83,10 @@ export default [
     meanRadius: 58232,
     equaRadius: 60268,
     polarRadius: 54364,
+    mass: { massValue: 5.6834, massExponent: 26 },
+    vol: { volValue: 8.2713, volExponent: 14 },
+    discoveredBy: 'Known to ancient civilizations',
+    discoveryDate: 'Antiquity',
     moons: [{moon:'Titan'},{moon:'Rhea'}],
     bodyType: 'Planet'
   },
@@ -74,6 +98,10 @@ export default [
     meanRadius: 25362,
     equaRadius: 25559,
     polarRadius: 24973,
+    mass: { massValue: 8.6810, massExponent: 25 },
+    vol: { volValue: 6.833, volExponent: 13 },
+    discoveredBy: 'William Herschel',
+    discoveryDate: '1781-03-13',
     moons: [{moon:'Titania'},{moon:'Oberon'}],
     bodyType: 'Planet'
   },
@@ -85,6 +113,10 @@ export default [
     meanRadius: 24622,
     equaRadius: 24764,
     polarRadius: 24341,
+    mass: { massValue: 1.02413, massExponent: 26 },
+    vol: { volValue: 6.254, volExponent: 13 },
+    discoveredBy: 'Johann Galle',
+    discoveryDate: '1846-09-23',
     moons: [{moon:'Triton'}],
     bodyType: 'Planet'
   }

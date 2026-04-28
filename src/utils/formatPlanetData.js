@@ -3,6 +3,21 @@ export function formatPlanet(raw){
   return {
     id: raw.id || raw.englishName?.toLowerCase() || raw.name,
     name: raw.englishName || raw.name || raw.id,
+    // localized display name (Spanish) when available
+    displayName: (() => {
+      const en = raw.englishName || raw.name || raw.id
+      const map = {
+        Mercury: 'Mercurio',
+        Venus: 'Venus',
+        Earth: 'Tierra',
+        Mars: 'Marte',
+        Jupiter: 'Júpiter',
+        Saturn: 'Saturno',
+        Uranus: 'Urano',
+        Neptune: 'Neptuno'
+      }
+      return map[en] || en
+    })(),
     gravity: raw.gravity,
     density: raw.density,
     meanRadius: raw.meanRadius,

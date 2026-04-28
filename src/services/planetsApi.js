@@ -1,11 +1,6 @@
-const BASE = 'https://api.le-systeme-solaire.net/rest/bodies'
-
-// Read key injected by Vite at build/dev time
-const API_KEY = import.meta.env.VITE_SOLAR_API_KEY
-
-function makeHeaders() {
-  return API_KEY ? { 'Authorization': `Bearer ${API_KEY}` } : {}
-}
+// Use the local dev proxy at /api so the dev server can attach Authorization
+// server-side. Do NOT send the API key from the browser.
+const BASE = '/api/rest/bodies'
 
 async function safeJson(res) {
   // try parse JSON, otherwise return text message
@@ -15,21 +10,22 @@ async function safeJson(res) {
 
 export async function getPlanets(){
   try{
-    const res = await fetch(BASE, { headers: makeHeaders() })
+    const res = await fetch(BASE)
     if(res.ok){
       const data = await safeJson(res)
       const wanted = ['Mercury','Venus','Earth','Mars','Jupiter','Saturn','Uranus','Neptune']
-      return data.bodies.filter(b => wanted.includes(b.englishName))
+      // preserve canonical solar order regardless of API ordering
+      return wanted.map(name => data.bodies.find(b => b.englishName === name)).filter(Boolean)
     }
 
     // if 401 or other, try proxy with same header (dev only)
     console.warn('Planets API returned non-ok status', res.status)
-    const proxy = `https://api.allorigins.win/raw?url=${encodeURIComponent(BASE)}`
-    const pRes = await fetch(proxy, { headers: makeHeaders() })
+    const proxy = `https://api.allorigins.win/raw?url=${encodeURIComponent('https://api.le-systeme-solaire.net/rest/bodies')}`
+    const pRes = await fetch(proxy)
     if(pRes.ok){
       const data = await safeJson(pRes)
       const wanted = ['Mercury','Venus','Earth','Mars','Jupiter','Saturn','Uranus','Neptune']
-      return data.bodies.filter(b => wanted.includes(b.englishName))
+      return wanted.map(name => data.bodies.find(b => b.englishName === name)).filter(Boolean)
     }
 
     // try to read message for debugging
@@ -40,7 +36,8 @@ export async function getPlanets(){
     // fallback to local dataset for dev/demo
     try{
       const { default: fallback } = await import('../data/planetFallback.js')
-      return fallback
+      const wanted = ['Mercury','Venus','Earth','Mars','Jupiter','Saturn','Uranus','Neptune']
+      return wanted.map(name => fallback.find(b => (b.englishName === name) || (b.id && b.id.toLowerCase() === name.toLowerCase()))).filter(Boolean)
     }catch(e){
       throw new Error('Unable to load planets: ' + err.message)
     }
@@ -49,11 +46,11 @@ export async function getPlanets(){
 
 export async function getPlanetById(id){
   try{
-    const res = await fetch(`${BASE}/${id}`, { headers: makeHeaders() })
+    const res = await fetch(`${BASE}/${id}`)
     if(res.ok) return safeJson(res)
 
-    const proxy = `https://api.allorigins.win/raw?url=${encodeURIComponent(BASE + '/' + id)}`
-    const pRes = await fetch(proxy, { headers: makeHeaders() })
+    const proxy = `https://api.allorigins.win/raw?url=${encodeURIComponent('https://api.le-systeme-solaire.net/rest/bodies/' + id)}`
+    const pRes = await fetch(proxy)
     if(pRes.ok) return safeJson(pRes)
 
     const debug = await safeJson(res)

@@ -4,8 +4,18 @@ import { getPlanetById } from '../services/planetsApi'
 import { formatPlanet } from '../utils/formatPlanetData'
 import LoadingState from '../components/LoadingState'
 import ErrorState from '../components/ErrorState'
-import PlanetStats from '../components/PlanetStats'
-import EarthViewer from '../components/EarthViewer'
+import TechnicalDetails from '../components/TechnicalDetails'
+import SketchfabEmbed from '../components/SketchfabEmbed'
+import {
+  earthModelEmbed,
+  mercuryModelEmbed,
+  venusModelEmbed,
+  marsModelEmbed,
+  jupiterModelEmbed,
+  saturnModelEmbed,
+  uranusModelEmbed,
+  neptuneModelEmbed
+} from '../data/featuredModels'
 
 export default function PlanetDetail(){
   const { id } = useParams()
@@ -15,6 +25,8 @@ export default function PlanetDetail(){
 
   useEffect(()=>{
     setLoading(true)
+    setError(null)
+    setPlanet(null)
     getPlanetById(id)
       .then(raw => setPlanet(formatPlanet(raw)))
       .catch(err => setError(err.message || 'Error'))
@@ -25,26 +37,39 @@ export default function PlanetDetail(){
   if(error) return <ErrorState message={error} />
   if(!planet) return <div className="card">Planeta no encontrado</div>
 
+  const planet3DModels = {
+    Mercury: mercuryModelEmbed,
+    Venus: venusModelEmbed,
+    Earth: earthModelEmbed,
+    Mars: marsModelEmbed,
+    Jupiter: jupiterModelEmbed,
+    Saturn: saturnModelEmbed,
+    Uranus: uranusModelEmbed,
+    Neptune: neptuneModelEmbed
+  }
+
+  const modelSrc = planet3DModels[planet.name]
+
   return (
     <div className="container">
       <div style={{marginBottom:12}}><Link to="/">← Volver</Link></div>
 
-      <div style={{display:'grid',gridTemplateColumns:'1fr 360px',gap:16}}>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 660px',gap:16}}>
         <div className="card">
-          <h2>{planet.name}</h2>
-          <p className="muted">Tipo: {planet.bodyType}</p>
-          <p className="muted">Descubierto por: {planet.discoveredBy || '—'} — {planet.discoveryDate || '—'}</p>
-          <div style={{marginTop:12}}>
-            <h4>Descripción técnica (datos crudos)</h4>
-            <pre style={{whiteSpace:'pre-wrap',fontSize:12,color:'#dbe9ff',background:'rgba(255,255,255,0.02)',padding:12,borderRadius:8,maxHeight:320,overflow:'auto'}}>
-              {JSON.stringify(planet.raw, null, 2)}
-            </pre>
-          </div>
+          <h2>{planet.displayName || planet.name}</h2>
+
+          <TechnicalDetails planet={planet} />
         </div>
 
         <aside style={{display:'grid',gap:12}}>
-          <PlanetStats planet={planet} />
-          {planet.name === 'Earth' && <EarthViewer />}
+          {modelSrc ? (
+            <div className="card">
+              <h4>Visual 3D</h4>
+              <SketchfabEmbed src={modelSrc} title={`${planet.displayName || planet.name} 3D`} height={620} />
+            </div>
+          ) : (
+            <div className="card">No hay modelo 3D disponible</div>
+          )}
         </aside>
       </div>
     </div>

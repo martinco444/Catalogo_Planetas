@@ -8,6 +8,7 @@ export default function Navbar(){
         <Link to="/" style={{fontWeight:700,fontSize:18}}>🌌 Catálogo Planetas</Link>
         <div style={{display:'flex',gap:12}}>
           <Link to="/" className="muted">Inicio</Link>
+          <Link to="/history" className="muted">Historial</Link>
         </div>
       </nav>
     </header>

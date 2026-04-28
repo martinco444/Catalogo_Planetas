@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { planetImages, placeholder } from '../data/planetImages'
 import SketchfabEmbed from './SketchfabEmbed'
+import { addVisited } from '../utils/visitedHistory'
 import {
   earthModelEmbed,
   mercuryModelEmbed,
@@ -29,11 +30,17 @@ export default function PlanetCard({ planet }) {
   }
 
   const has3D = planet3DModels[planet.name]
+  // do not auto-load 3D in planet cards; user must click to load
   const [show3D, setShow3D] = useState(false)
 
   return (
     <article className="card">
-      <Link to={`/planet/${planet.id}`} style={{textDecoration:'none',color:'inherit'}}>
+          <Link to={`/planet/${planet.id}`} style={{textDecoration:'none',color:'inherit'}} onClick={() => {
+        try{
+          // record visited planet (minimal info) - store localized name
+          addVisited({ id: planet.id, name: planet.displayName || planet.name, img })
+        }catch(e){}
+      }}>
         <div style={{position:'relative',borderRadius:8,overflow:'hidden'}}>
           {isEarth ? (
             show3D ? (
@@ -42,7 +49,7 @@ export default function PlanetCard({ planet }) {
               <div style={{
                 cursor:'pointer'
               }} onClick={(e)=>{ e.preventDefault(); setShow3D(true) }}>
-                <img src={img} alt={planet.name} style={{width:'100%',height:140,objectFit:'cover',display:'block'}} />
+                <img src={img} alt={planet.displayName || planet.name} style={{width:'100%',height:140,objectFit:'cover',display:'block'}} loading="lazy" onError={(e)=>{ e.currentTarget.src = placeholder }} />
                 <div style={{
                   position:'absolute', left:10, bottom:10, background:'rgba(0,0,0,0.5)',
                   color:'#fff', padding:'6px 10px', borderRadius:20, fontSize:12
@@ -54,7 +61,7 @@ export default function PlanetCard({ planet }) {
               <SketchfabEmbed src={planet3DModels[planet.name]} title={planet.name + " 3D"} height={180} />
             ) : (
               <div style={{cursor:'pointer'}} onClick={e => { e.preventDefault(); setShow3D(true) }}>
-                <img src={img} alt={planet.name} style={{width:'100%',height:140,objectFit:'cover',display:'block'}} />
+                <img src={img} alt={planet.displayName || planet.name} style={{width:'100%',height:140,objectFit:'cover',display:'block'}} loading="lazy" onError={(e)=>{ e.currentTarget.src = placeholder }} />
                 <div style={{
                   position:'absolute', left:10, bottom:10, background:'rgba(0,0,0,0.5)',
                   color:'#fff', padding:'6px 10px', borderRadius:20, fontSize:12
@@ -62,11 +69,11 @@ export default function PlanetCard({ planet }) {
               </div>
             )
           ) : (
-            <img src={img} alt={planet.name} style={{width:'100%',height:140,objectFit:'cover',display:'block'}} />
+            <img src={img} alt={planet.displayName || planet.name} style={{width:'100%',height:140,objectFit:'cover',display:'block'}} loading="lazy" onError={(e)=>{ e.currentTarget.src = placeholder }} />
           )}
         </div>
 
-        <h3 style={{margin:'12px 0 6px'}}>{planet.name}</h3>
+        <h3 style={{margin:'12px 0 6px'}}>{planet.displayName || planet.name}</h3>
       </Link>
 
       <div className="muted" style={{fontSize:14,display:'flex',gap:12}}>

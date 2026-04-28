@@ -9,7 +9,7 @@ import ErrorState from '../components/ErrorState'
 import usePlanets from '../hooks/usePlanets'
 
 export default function Home(){
-  const {planets, loading, error, query, setQuery, filterOnlyWithMoons, setFilterOnlyWithMoons} = usePlanets()
+  const {planets, loading, error, query, setQuery, filterOnlyWithMoons, setFilterOnlyWithMoons, sortMode, setSortMode} = usePlanets()
 
   return (
     <div className="container">
@@ -19,12 +19,16 @@ export default function Home(){
         <div>
           <div style={{display:'flex',gap:12,marginBottom:12}}>
             <div style={{flex:1}}><SearchBar value={query} onChange={setQuery} /></div>
-            <FilterBar onlyWithMoons={filterOnlyWithMoons} onToggle={setFilterOnlyWithMoons} />
+            <FilterBar onlyWithMoons={filterOnlyWithMoons} onToggle={setFilterOnlyWithMoons} sortMode={sortMode} onSortChange={setSortMode} />
           </div>
 
-          {loading && <LoadingState />}
-          {error && <ErrorState message={error} />}
-          {!loading && !error && <PlanetGrid planets={planets} />}
+          {loading ? (
+            <LoadingState />
+          ) : error ? (
+            <ErrorState message={error} />
+          ) : (
+            <PlanetGrid planets={planets} />
+          )}
         </div>
 
         {/* <aside>
