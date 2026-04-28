@@ -2,6 +2,7 @@ import React from 'react'
 import SketchfabEmbed from './SketchfabEmbed'
 import { heroModelEmbed } from '../data/featuredModels'
 import SatelliteScene from './SatelliteScene'
+import SolarSystemScene from './SolarSystemScene'
 
 export default function HeroSection(){
   return (
@@ -14,7 +15,7 @@ export default function HeroSection(){
         <p className="muted">Explora los planetas principales, consulta sus estadísticas y observalos en 3D.</p>
       </div>
       <div>
-        <SketchfabEmbed src={heroModelEmbed} title="Hero 3D" height={300} />
+        <SolarSystemScene width={720} height={300} />
       </div>
     </section>
   )
