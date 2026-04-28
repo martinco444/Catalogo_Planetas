@@ -3,7 +3,7 @@ import HeroSection from '../components/HeroSection'
 import PlanetGrid from '../components/PlanetGrid'
 import SearchBar from '../components/SearchBar'
 import FilterBar from '../components/FilterBar'
-import EarthViewer from '../components/EarthViewer'
+//import EarthViewer from '../components/EarthViewer'
 import LoadingState from '../components/LoadingState'
 import ErrorState from '../components/ErrorState'
 import usePlanets from '../hooks/usePlanets'
@@ -15,7 +15,7 @@ export default function Home(){
     <div className="container">
       <HeroSection />
 
-      <section style={{marginTop:20,display:'grid',gridTemplateColumns:'1fr 320px',gap:16,alignItems:'start'}}>
+      <section style={{marginTop:20,display:'grid',gridTemplateColumns:'1fr',gap:16,alignItems:'start'}}>
         <div>
           <div style={{display:'flex',gap:12,marginBottom:12}}>
             <div style={{flex:1}}><SearchBar value={query} onChange={setQuery} /></div>
@@ -27,9 +27,9 @@ export default function Home(){
           {!loading && !error && <PlanetGrid planets={planets} />}
         </div>
 
-        <aside>
+        {/* <aside>
           <EarthViewer />
-        </aside>
+        </aside> */}
       </section>
     </div>
   )
