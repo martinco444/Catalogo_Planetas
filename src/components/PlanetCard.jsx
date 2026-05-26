@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Link } from 'react-router-dom'
+import Link from 'next/link'
 import { planetImages, placeholder } from '../data/planetImages'
 import SketchfabEmbed from './SketchfabEmbed'
 import { addVisited } from '../utils/visitedHistory'
@@ -35,7 +35,7 @@ export default function PlanetCard({ planet }) {
 
   return (
     <article className="card">
-          <Link to={`/planet/${planet.id}`} style={{textDecoration:'none',color:'inherit'}} onClick={() => {
+          <Link href={`/planet/${planet.id}`} style={{textDecoration:'none',color:'inherit'}} onClick={() => {
         try{
           // record visited planet (minimal info) - store localized name
           addVisited({ id: planet.id, name: planet.displayName || planet.name, img })

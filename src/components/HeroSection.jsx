@@ -1,8 +1,11 @@
 import React from 'react'
+import dynamic from 'next/dynamic'
 import SketchfabEmbed from './SketchfabEmbed'
 import { heroModelEmbed } from '../data/featuredModels'
-import SatelliteScene from './SatelliteScene'
-import SolarSystemScene from './SolarSystemScene'
+
+// Load heavy 3D components only on the client to avoid SSR issues
+const SatelliteScene = dynamic(() => import('./SatelliteScene'), { ssr: false })
+const SolarSystemScene = dynamic(() => import('./SolarSystemScene'), { ssr: false })
 
 export default function HeroSection(){
   return (

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useRouter } from 'next/router'
+import Link from 'next/link'
 import { getPlanetById } from '../services/planetsApi'
 import { formatPlanet } from '../utils/formatPlanetData'
 import LoadingState from '../components/LoadingState'
@@ -18,7 +19,8 @@ import {
 } from '../data/featuredModels'
 
 export default function PlanetDetail(){
-  const { id } = useParams()
+  const router = useRouter()
+  const { id } = router.query
   const [planet, setPlanet] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -52,7 +54,7 @@ export default function PlanetDetail(){
 
   return (
     <div className="container">
-      <div style={{marginBottom:12}}><Link to="/">← Volver</Link></div>
+      <div style={{marginBottom:12}}><Link href="/">← Volver</Link></div>
 
       <div style={{display:'grid',gridTemplateColumns:'1fr 660px',gap:16}}>
         <div className="card">
