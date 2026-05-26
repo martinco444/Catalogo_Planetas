@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import { getSocket } from '../services/socket'
 import TriviaGame from './TriviaGame'
+import { useRouter } from 'next/router'
+import useAuth from '../hooks/useAuth'
 
 export default function TriviaLobby(){
   const socket = getSocket()
@@ -11,6 +13,8 @@ export default function TriviaLobby(){
   const [players, setPlayers] = useState([])
   const [isHost, setIsHost] = useState(false)
   const [gameState, setGameState] = useState('waiting') // waiting | running | finished
+  const [copied, setCopied] = useState(false)
+  const { user } = useAuth()
 
   useEffect(()=>{
     if(!socket) return
@@ -32,6 +36,32 @@ export default function TriviaLobby(){
       socket.off('game_over', onGameOver)
     }
   },[socket])
+
+  // auto-join if query params present (from chat)
+  const router = useRouter()
+  useEffect(()=>{
+    if(!socket) return
+    if(!router.isReady) return
+    const { room, name } = router.query
+    if(room && name && !joinedRoom){
+      // try to join the room using provided name
+      socket.emit('join_room', { roomId: room, name }, (res) => {
+        if(res && res.ok){
+          setJoinedRoom(room)
+          setIsHost(false)
+          setName(name)
+        }else{
+          // show error and keep user on page
+          alert(res && res.error ? res.error : 'Error al unirse a la sala desde chat')
+        }
+      })
+    }
+  },[socket, router.isReady, router.query])
+
+  // if user logged in, prefill name
+  useEffect(()=>{
+    if(user && user.name) setName(user.name)
+  },[user])
 
   const handleCreate = () => {
     if(!name) return alert('Ingresa un nombre')
@@ -73,6 +103,23 @@ export default function TriviaLobby(){
       if(res && !res.ok) return alert(res.error || 'Error al finalizar')
       // do not set local state here; wait for server 'game_over' event
     })
+  }
+
+  const handleCopyCode = async () => {
+    if(!joinedRoom) return
+    try{
+      if(navigator && navigator.clipboard && navigator.clipboard.writeText){
+        await navigator.clipboard.writeText(joinedRoom)
+      } else {
+        // fallback
+        window.prompt('Copia el código de la sala', joinedRoom)
+      }
+      setCopied(true)
+      setTimeout(()=>setCopied(false), 2000)
+    }catch(e){
+      console.error('copy failed', e)
+      window.prompt('Copia el código de la sala', joinedRoom)
+    }
   }
 
   if(!joinedRoom){
@@ -120,7 +167,10 @@ export default function TriviaLobby(){
       <div>
         <div style={{marginBottom:12}} className="card">
           <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-            <div><strong>Sala:</strong> {joinedRoom} — Planeta: {planet}</div>
+            <div style={{display:'flex',gap:8,alignItems:'center'}}>
+              <div><strong>Sala:</strong> {joinedRoom} — Planeta: {planet}</div>
+              <button onClick={handleCopyCode} className="btn small">{copied ? 'Copiado' : 'Copiar'}</button>
+            </div>
             <div>{isHost ? <button onClick={handleFinish} className="btn muted">Finalizar partida</button> : null}</div>
           </div>
         </div>
@@ -133,9 +183,14 @@ export default function TriviaLobby(){
     <div>
       <div className="card trivia-lobby">
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-          <div>
-            <h4>Sala: {joinedRoom}</h4>
-            <div className="muted">Planeta: {planet}</div>
+          <div style={{display:'flex',gap:8,alignItems:'center'}}>
+            <div>
+              <h4>Sala: {joinedRoom}</h4>
+              <div className="muted">Planeta: {planet}</div>
+            </div>
+            <div>
+              <button onClick={handleCopyCode} className="btn small">{copied ? 'Copiado' : 'Copiar código'}</button>
+            </div>
           </div>
           <div>
             {isHost ? <button onClick={handleStart} className="btn">Iniciar partida</button> : <div className="muted">Esperando al host...</div>}

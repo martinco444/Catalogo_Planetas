@@ -2,9 +2,19 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
+const fs = require('fs')
+const path = require('path')
+const bcrypt = require('bcryptjs')
+const jwt = require('jsonwebtoken')
+// load .env from server folder if present (dont commit .env with secrets)
+require('dotenv').config({ path: path.join(__dirname, '.env') })
 
 const app = express();
 app.use(cors());
+app.use(express.json())
+
+const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret'
+const db = require('./db')
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
@@ -20,18 +30,14 @@ const MAX_MESSAGES = 50;
 // Trivia game rooms in-memory
 const questionsData = require('./data/questions')
 const gameRooms = {}
-// recent finished games (most recent first)
-const recentGames = []
-
-// helper to record finished games and notify clients
-function recordFinishedGame(room){
+// helper to record finished games and notify clients (persisted in SQLite)
+async function recordFinishedGame(room){
   try{
     const leaderboard = Object.values(room.players).map(p => ({ name: p.name, score: p.score })).sort((a,b)=>b.score - a.score)
-    const entry = { id: room.id, planet: room.planet, leaderboard, ts: Date.now(), totalQuestions: room.questions ? room.questions.length : 0 }
-    recentGames.unshift(entry)
-    if(recentGames.length > 5) recentGames.pop()
-    // notify connected clients in real-time
-    io.emit('recent_games', recentGames)
+    // persist and then emit latest list
+    db.insertRecentGame({ roomId: room.id, planet: room.planet, leaderboard, ts: Date.now(), totalQuestions: room.questions ? room.questions.length : 0 })
+    const latest = db.getRecentGames(5)
+    io.emit('recent_games', latest)
   }catch(e){
     console.error('Error recording recent game', e)
   }
@@ -39,7 +45,45 @@ function recordFinishedGame(room){
 
 // Endpoint to retrieve recent games
 app.get('/recent-games', (req, res) => {
-  res.json(recentGames)
+  try{
+    const latest = db.getRecentGames(5)
+    res.json(latest)
+  }catch(e){
+    res.status(500).json([])
+  }
+})
+
+// --- Auth endpoints (using SQLite) ---
+app.post('/register', (req, res) => {
+  const { name, password } = req.body || {}
+  if(!name || !password) return res.status(400).json({ error: 'missing name or password' })
+  try{
+    const user = db.createUser(name, password)
+    return res.json({ ok: true, user: { id: user.id, name: user.name } })
+  }catch(e){
+    return res.status(400).json({ error: e.message })
+  }
+})
+
+app.post('/login', (req, res) => {
+  const { name, password } = req.body || {}
+  if(!name || !password) return res.status(400).json({ error: 'missing' })
+  const user = db.verifyUser(name, password)
+  if(!user) return res.status(401).json({ error: 'invalid' })
+  const token = jwt.sign({ id: user.id, name: user.name }, JWT_SECRET, { expiresIn: '8h' })
+  return res.json({ ok: true, token, user: { id: user.id, name: user.name } })
+})
+
+app.get('/me', (req, res) => {
+  const auth = req.headers.authorization || ''
+  if(!auth.startsWith('Bearer ')) return res.status(401).json({ error: 'missing' })
+  const token = auth.slice(7)
+  try{
+    const decoded = jwt.verify(token, JWT_SECRET)
+    return res.json({ ok: true, user: decoded })
+  }catch(e){
+    return res.status(401).json({ error: 'invalid' })
+  }
 })
 
 function generateRoomCode(len = 6){
@@ -63,6 +107,19 @@ function pickQuestionsForPlanet(planet){
   if(pool.length === 0) return []
   return shuffle(pool).slice(0,10)
 }
+
+// Socket auth: accept optional token in handshake.auth.token; if present verify and attach `socket.user`
+io.use((socket, next) => {
+  try{
+    const token = socket.handshake && socket.handshake.auth && socket.handshake.auth.token
+    if(!token) return next()
+    jwt.verify(token, JWT_SECRET, (err, decoded) => {
+      if(err){ console.log('[io] invalid token', err.message); return next(new Error('auth error')) }
+      socket.user = decoded
+      next()
+    })
+  }catch(e){ return next() }
+})
 
 io.on('connection', (socket) => {
   // --- Chat handlers (existing) ---
@@ -90,6 +147,7 @@ io.on('connection', (socket) => {
     gameRooms[roomId] = {
       id: roomId,
       host: socket.id,
+      hostUser: socket.user ? socket.user.id : null,
       planet: chosenPlanet,
       players: {},
       state: 'waiting',
@@ -100,7 +158,7 @@ io.on('connection', (socket) => {
       questionAnswered: false
     }
     socket.join(roomId)
-    gameRooms[roomId].players[socket.id] = { id: socket.id, name: name || 'Jugador', score: 0 }
+    gameRooms[roomId].players[socket.id] = { id: socket.id, name: (socket.user && socket.user.name) || name || 'Jugador', userId: socket.user ? socket.user.id : null, score: 0 }
     io.to(roomId).emit('player_list', Object.values(gameRooms[roomId].players).map(p => ({ name: p.name, score: p.score })))
     if(cb) cb({ ok: true, roomId })
   })
@@ -112,7 +170,7 @@ io.on('connection', (socket) => {
       return socket.emit('room_error', 'Room not found')
     }
     socket.join(roomId)
-    room.players[socket.id] = { id: socket.id, name: name || 'Jugador', score: 0 }
+    room.players[socket.id] = { id: socket.id, name: (socket.user && socket.user.name) || name || 'Jugador', userId: socket.user ? socket.user.id : null, score: 0 }
     io.to(roomId).emit('player_list', Object.values(room.players).map(p => ({ name: p.name, score: p.score })))
     if(cb) cb({ ok:true, roomId })
   })
@@ -120,7 +178,7 @@ io.on('connection', (socket) => {
   socket.on('start_game', ({ roomId }, cb) => {
     const room = gameRooms[roomId]
     if(!room) return cb ? cb({ ok:false, error:'Room not found' }) : null
-    if(room.host !== socket.id) return cb ? cb({ ok:false, error:'Only host can start' }) : null
+    if(room.host !== socket.id && !(room.hostUser && socket.user && room.hostUser === socket.user.id)) return cb ? cb({ ok:false, error:'Only host can start' }) : null
     room.state = 'running'
     room.current = -1
     io.to(roomId).emit('game_started')
@@ -132,7 +190,7 @@ io.on('connection', (socket) => {
   socket.on('end_game', ({ roomId }, cb) => {
     const room = gameRooms[roomId]
     if(!room) return cb ? cb({ ok:false, error:'Room not found' }) : null
-    if(room.host !== socket.id) return cb ? cb({ ok:false, error:'Only host can end the game' }) : null
+    if(room.host !== socket.id && !(room.hostUser && socket.user && room.hostUser === socket.user.id)) return cb ? cb({ ok:false, error:'Only host can end the game' }) : null
     console.log(`[end_game] requested by ${socket.id} for room ${roomId}`)
     // finish the game immediately
     room.state = 'finished'
@@ -232,6 +290,12 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 4000;
-server.listen(PORT, () => {
-  console.log(`Socket.IO server running on port ${PORT}`);
+if(JWT_SECRET === 'dev_secret'){
+  console.warn('[WARN] JWT_SECRET is not set. Using insecure default. Set JWT_SECRET in server/.env or environment for production.')
+}
+
+server.listen(process.env.PORT || PORT, () => {
+  console.log(`Socket.IO server running on port ${process.env.PORT || PORT}`);
+  console.log('[INFO] JWT secret configured:', JWT_SECRET !== 'dev_secret' ? 'provided' : 'default')
+  console.log('[INFO] SQLite DB file path:', db && db.backup ? 'available' : 'unknown')
 });

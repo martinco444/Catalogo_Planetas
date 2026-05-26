@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/router';
 import { getSocket } from '../services/socket';
 
 const socket = getSocket();
@@ -45,17 +46,14 @@ export default function ChatRoom() {
     }
   };
 
+  const router = useRouter()
+
   const handleJoinGame = () => {
     if(!socket) return alert('Socket no disponible')
     if(!gameCode || !user) return alert('Ingresa tu nombre y el código de sala de trivia')
-    socket.emit('join_room', { roomId: gameCode, name: user }, (res) => {
-      if(res && res.ok){
-        setGameJoined(true)
-        setGameRoomId(gameCode)
-      }else{
-        alert(res && res.error ? res.error : 'Error al unirse a la sala de trivia')
-      }
-    })
+    // redirect to /trivia and let the TriviaLobby auto-join using query params
+    const url = `/trivia?room=${encodeURIComponent(gameCode)}&name=${encodeURIComponent(user)}`
+    router.push(url)
   }
 
   const handleLeaveGame = () => {

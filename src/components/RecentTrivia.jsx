@@ -3,12 +3,10 @@ import { getSocket } from '../services/socket'
 
 export default function RecentTrivia(){
   const [list, setList] = useState([])
-  const [loading, setLoading] = useState(false)
   const base = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:4000'
   const socket = getSocket()
 
   async function fetchRecent(){
-    setLoading(true)
     try{
       const res = await fetch(base + '/recent-games')
       const data = await res.json()
@@ -16,7 +14,7 @@ export default function RecentTrivia(){
     }catch(e){
       console.error('recent fetch error', e)
       setList([])
-    }finally{ setLoading(false) }
+    }
   }
 
   useEffect(()=>{
@@ -35,7 +33,6 @@ export default function RecentTrivia(){
     <div className="card recent-games">
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
         <h4>Últimas partidas</h4>
-        <button className="btn small" onClick={fetchRecent} disabled={loading}>{loading ? '...' : 'Actualizar'}</button>
       </div>
 
       {list.length === 0 ? (
